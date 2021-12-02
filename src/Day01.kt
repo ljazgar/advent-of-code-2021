@@ -1,29 +1,16 @@
 fun main() {
     fun part1(input: List<String>): Int {
-        val numbers = input.map { it.toInt() }
-        var count = 0;
-        for (i in 1 until numbers.size) {
-            if (numbers[i] > numbers[i-1]) {
-                count++
-            }
-        }
-        return count;
+        return input.map { it.toInt() }
+            .zipWithNext()
+            .count { (curr, next) -> next > curr}
     }
 
     fun part2(input: List<String>): Int {
         val numbers = input.map { it.toInt() }
-        val windowSums = ArrayList<Int>()
-        for (i in 0 until numbers.size - 2) {
-            windowSums.add(numbers.subList(i, i + 3).sum())
-        }
-
-        var count = 0;
-        for (i in 1 until windowSums.size) {
-            if (windowSums[i] > windowSums[i-1]) {
-                count++
-            }
-        }
-        return count;
+        return numbers.windowed(3)
+            .map { it.sum() }
+            .zipWithNext()
+            .count { (curr, next) -> next > curr}
     }
 
     // test if implementation meets criteria from the description, like:

@@ -21,9 +21,7 @@ fun main() {
         var depth = 0
         var aim = 0
         input.forEach {
-            val splitted = it.split(' ')
-            val command = splitted[0]
-            val distance = splitted[1].toInt()
+            val (command, distance) = it.split(' ').let { (a, b) -> Pair(a, b.toInt()) }
 
             when (command) {
                 "down" -> aim += distance
