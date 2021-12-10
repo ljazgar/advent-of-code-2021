@@ -16,11 +16,11 @@ fun main() {
     // test if implementation meets criteria from the description, like:
     val testInput = readInput("Day01_test")
     val part1TestResult = part1(testInput)
-    println("Part1: Test Result: " + part1TestResult)
+    println("Part1: Test Result: $part1TestResult")
     check( part1TestResult == 7)
 
     val part2TestResult = part2(testInput)
-    println("Part2: Test Result: " + part2TestResult)
+    println("Part2: Test Result: $part2TestResult")
     check( part2TestResult == 5)
 
     val input = readInput("Day01")
