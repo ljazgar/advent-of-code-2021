@@ -32,8 +32,8 @@ fun main() {
             .minOf { it }
     }
 
-    val testInput = readDay08Input("Day07_test")
-    val input = readDay08Input("Day07")
+    val testInput = readDay07Input("Day07_test")
+    val input = readDay07Input("Day07")
 
     // test if implementation meets criteria from the description:
     val part1TestResult = part1(testInput)
@@ -47,6 +47,6 @@ fun main() {
     println("Part2: " + part2(input)) // 90040997
 }
 
-private fun readDay08Input(name: String): List<Int> {
+private fun readDay07Input(name: String): List<Int> {
     return readInput(name).first().split(',').map { it.trim().toInt() }
 }

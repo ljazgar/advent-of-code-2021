@@ -46,8 +46,8 @@ fun main() {
         return counterCount.sumOf { it }
     }
 
-    val testInput = readDay08Input("Day06_test")
-    val input = readDay08Input("Day06")
+    val testInput = readDay06Input("Day06_test")
+    val input = readDay06Input("Day06")
 
     // test if implementation meets criteria from the description:
     val part1TestResult = part1(testInput)
@@ -63,6 +63,6 @@ fun main() {
     println("Part2: " + part2(input))
 }
 
-private fun readDay08Input(name: String): List<Int> {
+private fun readDay06Input(name: String): List<Int> {
     return readInput(name).first().split(',').map { it.trim().toInt() }
 }
