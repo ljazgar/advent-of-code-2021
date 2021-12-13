@@ -91,6 +91,3 @@ private fun readDay08Input(name: String): List<Entry> {
             }
         }
 }
-
-private fun String.splitToWords(): List<String> =
-    split(' ').filter { it.isNotEmpty() }.toList()
