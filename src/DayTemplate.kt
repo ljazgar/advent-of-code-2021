@@ -49,6 +49,16 @@ private fun readDayTTInput(name: String): DayTTInput {
 //        .map { it.toCharArray().map { c -> c.digitToInt() }.toList() }
 //        .toList()
 //}
+//private fun List<List<Int>>.print() {
+//    val sizeY = size
+//    val sizeX = first().size
+//    (0 until sizeY).forEach() { y ->
+//        (0 until sizeX).forEach() { x ->
+//            print(this[y][x])
+//        }
+//        println()
+//    }
+//}
 
 
 //typealias DayTTInput = List<Pair<String, String>>
@@ -78,4 +88,16 @@ private fun readDayTTInput(name: String): DayTTInput {
 //        }
 //    }
 //    return DayTTInput(dots, folds)
+//}
+
+//private data class DayTTInput(val template: String, val rules: Map<String,Char>)
+//private fun readDayTTInput(name: String): DayTTInput {
+//    val lines = readInput(name)
+//    val template = lines.first()
+//
+//    val rules = lines.subList(2, lines.size)
+//        .map { line ->
+//            line.split(" -> ").let { (a, b) -> Pair(a.trim(), b.trim().first())}
+//        }.toMap()
+//    return DayTTInput(template, rules)
 //}

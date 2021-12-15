@@ -22,7 +22,7 @@ fun main() {
             println("After step $i: $s")
         }
 
-        val counts = s.toCharArray().toList().groupingBy { it }.eachCount().map { it.value }.toList()
+        val counts = s.toCharArray().toList().groupingBy { it }.eachCount().values
         val min = counts.minOf { it }
         val max = counts.maxOf { it }
 
