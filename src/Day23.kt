@@ -1,457 +1,307 @@
-import AmphipodType.*
+package day23
+
+import day23.AmphipodType.*
 import kotlin.math.abs
 import kotlin.math.min
 
 fun main() {
 
-    // PART 1 ******************************************************************************
-//    var counter = 0
-//
-//    fun evalMinCost(state: AmphipodsState): Long? {
-//        if (state.locs.isFinish()) {
-//            if (++counter % 10000 == 0) {
-//                println("Visited Leaves: $counter")
-//            }
-//            println("Found final state: Cost: ${state.cost}")
-//            return state.cost
-//        }
-//        val nextStates = state.nextStates()
-//        if (nextStates.isEmpty()) {
-//            if (++counter % 10000 == 0) {
-//                println("Visited Leaves: $counter")
-//            }
-//            return null
-//        }
-//        val minCost = nextStates.mapNotNull { evalMinCost(it) }
-//            .minByOrNull { it }
-//
-//        return minCost
-//    }
+    fun findMinCost(initialState: BurrowState, burrow: Burrow): Int {
+        initialState.print(burrow)
+        val finalState = burrow.finalState()
 
-    fun part1(input: LocsState): Long {
-        val burrow = Burrow.generate(2)
-        val initialState = AmphipodsState(input)
-        input.print(burrow)
+        val stateReachCost = mutableMapOf<BurrowState, Int>()
+        stateReachCost[initialState] = 0
 
-        val distances = mutableMapOf<AmphipodsState, Long>()
-        distances[initialState] = 0L
-        val distancesToGo = mutableMapOf<AmphipodsState, Long>()
-        distancesToGo[initialState] = initialState.locsState.approxCostToGo(burrow)
+        val visitedStates = mutableSetOf<BurrowState>()
+        val notVisitedStates = mutableListOf(initialState)
+        notVisitedStates.add(initialState)
 
-        val visitedStates = mutableSetOf<AmphipodsState>()
-        val notVisitedStates = mutableSetOf(initialState)
         var visitedAgainCounter = 0
-        var globalMin = Long.MAX_VALUE
+        var visitedFinalCounter = 0
+        var minToFinal = Int.MAX_VALUE
+
         while (notVisitedStates.isNotEmpty()) {
-            val currState = notVisitedStates.minByOrNull { (distances[it] ?: Long.MAX_VALUE) + (distancesToGo[it] ?: Long.MAX_VALUE)} ?: throw error("Impossible: no min")
-            val currStateDistance = distances[currState] ?: Long.MAX_VALUE
-            if (currState.locsState.isFinish(burrow)) {
-                globalMin = min(globalMin, currStateDistance)
+            val currState = notVisitedStates.last()
+            notVisitedStates.removeLast()
+            visitedStates.add(currState)
+
+            val currStateReachCost = stateReachCost[currState]!!
+            if (currState == finalState) {
+                minToFinal = min(minToFinal, currStateReachCost)
+                visitedFinalCounter++
+                continue
             }
 
-            if (visitedStates.size % 1000 == 0) {
-                val visitedFinalStates = visitedStates.filter { it.locsState.isFinish(burrow) }
-                val min = visitedFinalStates.firstOrNull()?.let { distances[it] }
-                println("visited: ${visitedStates.size}  Queue size: ${notVisitedStates.size}  visitedAgain: $visitedAgainCounter visitedFinal:${visitedFinalStates.count()} min: $min  curDist: $currStateDistance ")
+            if (visitedStates.size % 10000 == 0) {
+                println("visited: ${visitedStates.size}  Queue size: ${notVisitedStates.size}  visitedAgain: $visitedAgainCounter visitedFinal:$visitedFinalCounter minToFinal: $minToFinal  curCost: $currStateReachCost ")
             }
+
             val nextStatesWithCost = currState.nextStates(burrow)
-            nextStatesWithCost.forEach { (nextState, moveCost) ->
-                val newDistanceCandidate = currStateDistance + moveCost
-                val curDistance = distances[nextState] ?: Long.MAX_VALUE
-                distances[nextState] = min(curDistance, newDistanceCandidate)
 
-                var curDistanceToGo = distancesToGo[nextState]
-                if (curDistanceToGo == null) {
-                    curDistanceToGo = nextState.locsState.approxCostToGo(burrow)
-                    distancesToGo[nextState] = curDistanceToGo
+            nextStatesWithCost.forEach { (nextState, moveCost) ->
+                val nextStateReachCost = currStateReachCost + moveCost
+                val prevCost = stateReachCost[nextState]
+                if (prevCost == null || nextStateReachCost < prevCost) {
+                    stateReachCost[nextState] = nextStateReachCost
                 }
 
-                if (nextState !in visitedStates) {
-                    if (curDistance + curDistanceToGo < globalMin) {
-                        notVisitedStates.add(nextState)
-                    }
+                if (nextState !in visitedStates || nextStateReachCost < (prevCost ?: Int.MAX_VALUE)) {
+                    notVisitedStates.add(nextState)
                 } else {
                     visitedAgainCounter++
                 }
             }
-            notVisitedStates.remove(currState)
-            visitedStates.add(currState)
         }
 
-        val finishState = distances.keys.find { it.locsState.isFinish(burrow) }
-        val minCost = distances[finishState] ?: throw error("Impossible")
-        return minCost
+        println("visited: ${visitedStates.size}  Queue size: ${notVisitedStates.size}  visitedAgain: $visitedAgainCounter visitedFinal:$visitedFinalCounter minToFinal: $minToFinal ")
+
+        return stateReachCost[finalState] ?: throw error("Impossible")
+    }
+
+    // PART 1 ******************************************************************************
+    fun part1(initialState: BurrowState): Int {
+        return findMinCost(initialState, Burrow(2))
     }
 
     // PART 2 ******************************************************************************
 
-    fun part2(input: LocsState): Int {
-        return 0
+    fun part2(initialState: BurrowState): Int {
+        return findMinCost(initialState, Burrow(4))
     }
 
     // ***********************************************************************************
-//    val test1 = startPositionTest.isFinish()
-//    val test2 = testFinishStateCorrect.isFinish()
-//    val test3 = testFinishStateCorrect2.isFinish()
-//    val same = testFinishStateCorrect == testFinishStateCorrect2
-
-    val testInput = startPositionTest
-    val input = startPosition
-
     // test if implementation meets criteria from the description:
-//    val part1TestResult = part1(testInput)
-//    println("Part1: Test Result: $part1TestResult")
-//    check( part1TestResult == 12521L)
+    val part1TestResult = part1(startStateTest)
+    println("Part1: Test Result: $part1TestResult")
+    check( part1TestResult == 12521)
     println("Part1")
-    println("Part1: " + part1(input))
-//
-//    val part2TestResult = part2(testInput)
-//    println("Part2: Test Result: $part2TestResult")
-//    check( part2TestResult == 100000000)
-//    println("Part2: " + part2(input))
+    println("Part1: " + part1(startState))
+
+    val part2TestResult = part2(startState2Test)
+    println("Part2: Test Result: $part2TestResult")
+    check( part2TestResult == 44169)
+    println("Part2: " + part2(startState2))
 }
 
-private data class AmphipodLoc(val x: Int, val y: Int) {
-    inline fun isRoom(): Boolean = y > 0
-    inline fun isHall(): Boolean = y == 0
-    inline fun roomNumber(): Int? = if (isRoom()) Burrow.xToRoomNumber(x) else null
-}
-
-private data class Burrow(val locs: Set<AmphipodLoc>, val roomDepth: Int) {
-    companion object {
-        val hallLength = 11
-        val hallXs = 0 until hallLength
-        val roomsNumber = 4
-        val roomNumbers = (1..roomsNumber)
-        val roomXs = roomNumbers.map { roomNumberToX(it) }
-        fun xToRoomNumber(x: Int): Int = x/2
-        fun roomNumberToX(roomNumber: Int): Int = roomNumber * 2
-        fun isRoomEntrance(x: Int): Boolean = x in roomXs
-
-        fun generate(roomDepth: Int): Burrow {
-            val locs = mutableSetOf<AmphipodLoc>()
-            // Hall
-            hallXs
-                .filterNot { x -> isRoomEntrance(x) }
-                .forEach { x -> locs.add(AmphipodLoc(x, 0))}
-
-            // Rooms
-            (1..roomsNumber).forEach { room ->
-                (1..roomDepth).forEach { y ->
-                    locs.add(AmphipodLoc(roomNumberToX(room), y))
-                }
-            }
-            return Burrow(locs, roomDepth)
-        }
-
-        fun roomLoc(roomNumber: Int, depth: Int) = AmphipodLoc(roomNumberToX(roomNumber), depth)
-    }
-
-    val movesMap = generateMovesCharacteristics()
-
-    private fun stepsBetween(loc1: AmphipodLoc, loc2: AmphipodLoc): Int {
-        return abs(loc1.x - loc2.x) + abs(loc1.y - loc2.y)
-    }
-
-    private fun locsBetween(roomLoc: AmphipodLoc, hallLoc: AmphipodLoc): Set<AmphipodLoc> {
-        val locsBetween = mutableSetOf<AmphipodLoc>()
-        for (y in roomLoc.y-1 downTo 1) {
-            locsBetween.add(AmphipodLoc(roomLoc.x, y))
-        }
-        val xRange = if (roomLoc.x < hallLoc.x) roomLoc.x..hallLoc.x-1 else roomLoc.x downTo hallLoc.x+1
-        for (x in xRange) {
-            val loc = AmphipodLoc(x, 0)
-            if (loc in locs) {
-                locsBetween.add(loc)
-            }
-        }
-        return locsBetween
-    }
-
-    fun generateMovesCharacteristics(): Map<Pair<AmphipodLoc, AmphipodLoc>, MoveCharacteristic> {
-        val (roomLocs, hallLocs) = locs.partition { it.isRoom() }
-        return roomLocs.asSequence()
-            .flatMap { roomLoc ->
-                hallLocs.asSequence().map { hallLoc ->
-                    val steps = stepsBetween(roomLoc, hallLoc)
-                    val locsBetween = locsBetween(roomLoc, hallLoc)
-                    MoveCharacteristic(roomLoc, hallLoc, steps, locsBetween)
-                }
-            }.flatMap { mch ->
-                listOf(
-                    (mch.loc1 to mch.loc2) to mch,
-                    (mch.loc2 to mch.loc1) to mch,
-                )
-            }.toMap()
-    }
-
-    val allDeeperInRoom = locs.filter { it.isRoom() }.map { it to getAllDeeperInRoom(it) }.toMap()
-
-    private fun getAllDeeperInRoom(loc: AmphipodLoc): Set<AmphipodLoc> {
-        return locs.asSequence().filter { it.x == loc.x && it.y > loc.y }.toSet()
-    }
-
-    val finishState: LocsState = locs
-        .filter { it.isRoom() }
-        .mapNotNull { loc ->
-            AmphipodType.values()
-                .find { a -> a.targetRoom == loc.roomNumber()}
-                ?.let { a -> loc to a }
-        }
-        .toMap()
-
-}
-
+// ***********************************************************************************
 
 private enum class AmphipodType(val type: Char, val movingCost: Int, val targetRoom: Int) {
-    A('A', 1, 1),
-    B('B', 10, 2),
-    C('C', 100, 3),
-    D('D', 1000, 4),
+    A('A', 1, 0),
+    B('B', 10, 1),
+    C('C', 100, 2),
+    D('D', 1000, 3),
 }
 
-private typealias LocsState = Map<AmphipodLoc, AmphipodType>
-
-private data class AmphipodsState(val locsState: LocsState)
-
-private fun LocsState.isFinish(burrow: Burrow): Boolean {
-    return this == burrow.finishState
+private data class Burrow(val roomDepth: Int) {
+    val hallLength = 11
+    val roomsNumber = 4
+    val roomNumbers = (0 until roomsNumber)
+    val roomEntrances = roomNumbers.map { room -> (room+1) * 2 }
+    val roomAmphipodTypes = roomNumbers.map { room -> AmphipodType.values().first { it.targetRoom == room } }
+    val hallIsStayPosition = (0 until hallLength).map { x -> x !in roomEntrances }
 }
 
-private enum class AmphipodStatus { RoomStart, Hall, RoomFinal }
+private fun Burrow.stepsBetween(hallX: Int, roomNumber: Int, roomPos: Int): Int {
+    return roomPos + 1 + abs(roomEntrances[roomNumber] - hallX)
+}
+private fun Burrow.generateState(roomSetter: (room: Int) -> List<AmphipodType>): BurrowState {
+    val rooms = List(roomsNumber, roomSetter)
+    val hall = List(hallLength) { null }
+    return BurrowState(hall, rooms)
+}
 
-private fun Amphipod.status(burrow: Burrow, locsState: LocsState): AmphipodStatus {
-    return if (loc.isRoom()) {
-         if (type.targetRoom == loc.roomNumber()) {
-             val allDeeperCorrect = burrow.allDeeperInRoom[loc]
-                 ?.all { l -> locsState[l]?.targetRoom == type.targetRoom } ?: throw error("Impossible: no deeper")
-             if (allDeeperCorrect) {
-                 AmphipodStatus.RoomFinal
-             } else {
-                 AmphipodStatus.RoomStart
-             }
-         } else {
-             AmphipodStatus.RoomStart
-         }
-    } else {
-        AmphipodStatus.Hall
+private fun Burrow.finalState(): BurrowState {
+    val rooms = List(roomsNumber) { room ->
+        List(roomDepth) { roomAmphipodTypes[room] }
     }
+    val hall = List(hallLength) { null }
+    return BurrowState(hall, rooms)
 }
 
-private data class Amphipod(val type: AmphipodType, val loc: AmphipodLoc)
+// ***********************************************************************************
 
-private fun Amphipod.canGoTo(burrow: Burrow, targetLoc: AmphipodLoc, locsState: LocsState): MoveCharacteristic? {
-    val currentLoc = this.loc
-    if (locsState.containsKey(targetLoc)) return null
 
-    val status = status(burrow, locsState)
+private data class BurrowState(val hall: HallState, val rooms: List<RoomState>)
+private typealias HallState = List<AmphipodType?>
+private typealias RoomState = List<AmphipodType?>
 
-    if (status == AmphipodStatus.RoomFinal) return null
-    if (status == AmphipodStatus.RoomStart && targetLoc.isRoom()) return null
-    if (status == AmphipodStatus.Hall) {
-        if (Amphipod(type, targetLoc).status(burrow, locsState) != AmphipodStatus.RoomFinal) return null
-    }
+private data class RoomStatus(
+    val roomNumber: Int,
+    val occupiedNearestToEntranceY: Int?,
+    val incorrectAmphipodTypes: Boolean,
+    val deepestFreeY: Int?
+)
 
-    val mch = burrow.movesMap[currentLoc to targetLoc] ?: return null
-    if (!locsState.allPlacesFree(mch.locsBetween)) return null
-
-    return mch
-}
-
-private fun Amphipod.canMove(burrow: Burrow, locsState: LocsState): Boolean {
-    val status = status(burrow, locsState)
-    return (status != AmphipodStatus.RoomFinal)
-}
-
-private fun AmphipodsState.move(amphipod: Amphipod, targetLoc: AmphipodLoc, mch: MoveCharacteristic): Pair<AmphipodsState, Long> {
-    val newLocsState = this.locsState.toMutableMap()
-    newLocsState.remove(amphipod.loc)
-    newLocsState[targetLoc] = amphipod.type
-
-    val cost = mch.steps.toLong() * amphipod.type.movingCost
-
-    return AmphipodsState(newLocsState) to cost
-}
-
-private fun LocsState.getAllAmphipods(): Sequence<Amphipod> {
-    return this.entries.asSequence().map { (loc, amphType) -> Amphipod(amphType, loc)}
-}
-
-private fun LocsState.approxCostToGo(burrow: Burrow): Long {
-    return getAllAmphipods().map { amp ->
-        val targetRoom = amp.type.targetRoom
-        val steps = if (amp.loc.isRoom()) {
-            val ampRoomNumber = amp.loc.roomNumber()
-            if (ampRoomNumber == targetRoom) {
-                0
-            } else {
-                amp.loc.y + abs(amp.loc.x - Burrow.roomNumberToX(targetRoom)) + 1
+private fun evalRoomStatus(roomNumber: Int, roomState: RoomState, burrow: Burrow): RoomStatus {
+    var occupiedNearestToEntranceY: Int? = null
+    var incorrectAmphipodTypes = false
+    var deepestFreeY: Int? = null
+    for (y in (burrow.roomDepth - 1) downTo  0) {
+        val amph = roomState[y]
+        if (amph != null) {
+            occupiedNearestToEntranceY = y
+            if (amph != burrow.roomAmphipodTypes[roomNumber]) {
+                incorrectAmphipodTypes = true
             }
+        } else if (deepestFreeY == null) {
+            deepestFreeY = y
+        }
+    }
+    return RoomStatus(roomNumber, occupiedNearestToEntranceY, incorrectAmphipodTypes, deepestFreeY)
+}
+
+private fun HallState.getStayPositionsReachableFromEntrance(roomNumber: Int, burrow: Burrow): List<Int> {
+    val roomEntrance = burrow.roomEntrances[roomNumber]
+    val resultPositions = mutableListOf<Int>()
+    for (x in roomEntrance until burrow.hallLength) {
+        if (this[x] != null) {
+            break
+        }
+        if (burrow.hallIsStayPosition[x]) {
+            resultPositions.add(x)
+        }
+    }
+    for (x in roomEntrance downTo 0) {
+        if (this[x] != null) {
+            break
+        }
+        if (burrow.hallIsStayPosition[x]) {
+            resultPositions.add(x)
+        }
+    }
+    return resultPositions
+}
+
+private fun HallState.isRoomEntranceReachable(hallX: Int, roomNumber: Int, burrow: Burrow): Boolean {
+    val roomEntrance = burrow.roomEntrances[roomNumber]
+    val range = if (hallX < roomEntrance) hallX + 1 .. roomEntrance else roomEntrance until hallX
+    return range.all { x -> this[x] == null }
+}
+
+private fun BurrowState.exchangeInHallAndRoom(hallX: Int, roomNumber: Int, roomPos: Int): BurrowState {
+    val roomValue = this.rooms[roomNumber][roomPos]
+    val hallValue = this.hall[hallX]
+
+    val newHall = hall.toMutableList().apply { set(hallX, roomValue) }
+
+    val newRooms = rooms.mapIndexed { i, room ->
+        if (i == roomNumber) {
+            room.toMutableList().apply { set(roomPos, hallValue) }
         } else {
-            abs(amp.loc.x - Burrow.roomNumberToX(targetRoom)) + 1
+            room
         }
-        steps.toLong() * amp.type.movingCost
-    }.sum()
+    }
+    return BurrowState(newHall, newRooms)
+
 }
 
-private fun AmphipodsState.nextStates(burrow: Burrow): Set<Pair<AmphipodsState, Long>> {
-    val allowedMoves = locsState.getAllAmphipods()
-        .filter { amphipod -> amphipod.canMove(burrow, locsState) }
-        .flatMap { amphipod -> burrow.locs.asSequence()
-            .map { loc -> amphipod to loc }
-        }
-        .mapNotNull { (amphipod, targetLoc) ->
-            amphipod.canGoTo(burrow, targetLoc, locsState)?.let { mch ->
-                Triple(amphipod, targetLoc, mch)
+private fun BurrowState.moveFromRoomToHall(roomNumber: Int, roomPos: Int, hallX: Int): BurrowState
+    = exchangeInHallAndRoom(hallX, roomNumber, roomPos)
+
+private fun BurrowState.moveFromHallToRoom(hallX: Int, roomNumber: Int, roomPos: Int): BurrowState
+    = exchangeInHallAndRoom(hallX, roomNumber, roomPos)
+
+
+private fun BurrowState.nextStates(burrow: Burrow): List<Pair<BurrowState, Int>> {
+    val roomStatuses = burrow.roomNumbers.map { r -> evalRoomStatus(r, this.rooms[r], burrow) }
+
+    // From room to hall
+    val fromRoomToHall = roomStatuses.asSequence().mapNotNull { rs ->
+        if (rs.incorrectAmphipodTypes && rs.occupiedNearestToEntranceY != null) rs.roomNumber to rs.occupiedNearestToEntranceY
+        else null
+    }.flatMap { (roomNumber, roomPos) ->
+        val amph = this.rooms[roomNumber][roomPos] ?: throw error("Wrong")
+        this.hall.getStayPositionsReachableFromEntrance(roomNumber, burrow).asSequence()
+            .map { hallX ->
+                val cost = burrow.stepsBetween(hallX, roomNumber, roomPos) * amph.movingCost
+                val newState = this.moveFromRoomToHall(roomNumber, roomPos, hallX)
+                newState to cost
             }
+    }
+
+    // from hall to room
+    val fromHallToRoom = this.hall.asSequence()
+        .mapIndexedNotNull { hallX, amph -> if (amph != null) hallX to amph else null }
+        .filter { (hallX, amph) ->
+            val targetRoomStatus = roomStatuses[amph.targetRoom]
+            !targetRoomStatus.incorrectAmphipodTypes
+                && targetRoomStatus.deepestFreeY != null
+                && hall.isRoomEntranceReachable(hallX, amph.targetRoom, burrow)
+        }
+        .map { (hallX, amph) ->
+            val deepestFreeRoomPos = roomStatuses[amph.targetRoom].deepestFreeY ?: throw error("Unexpected lack of free position in room")
+            val cost = burrow.stepsBetween(hallX, amph.targetRoom, deepestFreeRoomPos) * amph.movingCost
+            val newState = this.moveFromHallToRoom(hallX, amph.targetRoom, deepestFreeRoomPos)
+            newState to cost
         }
 
-    val nextStates = allowedMoves.map { (amphipod, loc, mch) -> this.move(amphipod, loc, mch) }.toSet()
-    return nextStates
+    return (fromRoomToHall + fromHallToRoom).toList()
 }
 
-
-private fun LocsState.stringify(burrow: Burrow): String {
+// ***************************************************************************
+private fun BurrowState.stringify(burrow: Burrow): String {
     return StringBuilder().apply() {
-        for (y in 0..burrow.roomDepth) {
-            for (x in Burrow.hallXs) {
-                val loc = AmphipodLoc(x, y)
-                val ch = when(loc) {
-                    in burrow.locs -> get(loc)?.type ?: '.'
-                    else -> ' '
-                }
-                append(ch)
+        for (x in hall.indices) {
+            append( hall[x]?.type ?: '.')
+        }
+        appendLine()
+        for (y in 0 until burrow.roomDepth) {
+            append("  ")
+            for (r in burrow.roomNumbers) {
+                append( rooms[r][y]?.type ?: '.')
+                append(' ')
             }
             appendLine()
         }
     }.toString()
 }
 
-private fun LocsState.print(burrow: Burrow) {
+private fun BurrowState.print(burrow: Burrow) {
     println(stringify(burrow))
 }
 
-private val startPositionTest = mapOf(
-    Burrow.roomLoc(1, 1) to B,
-    Burrow.roomLoc(1, 2) to A,
-    Burrow.roomLoc(2, 1) to C,
-    Burrow.roomLoc(2, 2) to D,
-    Burrow.roomLoc(3, 1) to B,
-    Burrow.roomLoc(3, 2) to C,
-    Burrow.roomLoc(4, 1) to D,
-    Burrow.roomLoc(4, 2) to A,
-)
-
-private val startPosition = mapOf(
-    Burrow.roomLoc(1, 1) to D,
-    Burrow.roomLoc(1, 2) to C,
-    Burrow.roomLoc(2, 1) to D,
-    Burrow.roomLoc(2, 2) to C,
-    Burrow.roomLoc(3, 1) to A,
-    Burrow.roomLoc(3, 2) to B,
-    Burrow.roomLoc(4, 1) to A,
-    Burrow.roomLoc(4, 2) to B,
-)
-
-private val testFinish = mapOf(
-    Burrow.roomLoc(1, 1) to A,
-    Burrow.roomLoc(1, 2) to A,
-    Burrow.roomLoc(2, 1) to B,
-    Burrow.roomLoc(2, 2) to B,
-    Burrow.roomLoc(3, 1) to C,
-    Burrow.roomLoc(3, 2) to C,
-    Burrow.roomLoc(4, 1) to D,
-    Burrow.roomLoc(4, 2) to D,
-)
-
-
-//private fun LocsState.placesFree(vararg locs: AmphipodLoc): Boolean {
-//    return locs.all { loc -> this[loc] == null }
-//}
-private fun LocsState.allPlacesFree(locs: Collection<AmphipodLoc>): Boolean {
-    return locs.all { loc -> this[loc] == null }
+private val startStateTest = Burrow(2).generateState { room ->
+    when(room) {
+        0 -> listOf(B, A)
+        1 -> listOf(C, D)
+        2 -> listOf(B, C)
+        3 -> listOf(D, A)
+        else -> throw error("error")
+    }
 }
 
-//private fun placesFree(vararg locs: AmphipodLoc): (LocsState) -> Boolean {
-//    return { locsState -> locsState.placesFree(locs.toList()) }
-//}
+private val startState = Burrow(2).generateState { room ->
+    when(room) {
+        0 -> listOf(D, C)
+        1 -> listOf(D, C)
+        2 -> listOf(A, B)
+        3 -> listOf(A, B)
+        else -> throw error("error")
+    }
+}
 
-private data class MoveCharacteristic(val loc1: AmphipodLoc, val loc2: AmphipodLoc, val steps: Int, val locsBetween: Set<AmphipodLoc> )
+private val startState2Test = Burrow(4).generateState { room ->
+    when(room) {
+        0 -> listOf(B, D, D, A)
+        1 -> listOf(C, C, B, D)
+        2 -> listOf(B, B, A, C)
+        3 -> listOf(D, A, C, A)
+        else -> throw error("error")
+    }
+}
 
-//private val movesCharacteristics = listOf(
-//    MoveCharacteristic(CAVE1_DEEP, HALL_LEFT_DEEP, 4, placesFree(CAVE1_SHALLOW, HALL_LEFT_SHALLOW)),
-//    MoveCharacteristic(CAVE1_DEEP, HALL_LEFT_SHALLOW, 3, placesFree(CAVE1_SHALLOW)),
-//    MoveCharacteristic(CAVE1_DEEP, HALL_BETWEEN_1_2, 3, placesFree(CAVE1_SHALLOW)),
-//    MoveCharacteristic(CAVE1_DEEP, HALL_BETWEEN_2_3, 5, placesFree(CAVE1_SHALLOW, HALL_BETWEEN_1_2)),
-//    MoveCharacteristic(CAVE1_DEEP, HALL_BETWEEN_3_4, 7, placesFree(CAVE1_SHALLOW, HALL_BETWEEN_1_2, HALL_BETWEEN_2_3)),
-//    MoveCharacteristic(CAVE1_DEEP, HALL_RIGHT_SHALLOW, 9, placesFree(CAVE1_SHALLOW, HALL_BETWEEN_1_2, HALL_BETWEEN_2_3, HALL_BETWEEN_3_4)),
-//    MoveCharacteristic(CAVE1_DEEP, HALL_RIGHT_DEEP, 10, placesFree(CAVE1_SHALLOW, HALL_BETWEEN_1_2, HALL_BETWEEN_2_3, HALL_BETWEEN_3_4, HALL_RIGHT_DEEP)),
-//
-//    MoveCharacteristic(CAVE1_SHALLOW, HALL_LEFT_DEEP, 3, placesFree(HALL_LEFT_SHALLOW)),
-//    MoveCharacteristic(CAVE1_SHALLOW, HALL_LEFT_SHALLOW, 2, placesFree()),
-//    MoveCharacteristic(CAVE1_SHALLOW, HALL_BETWEEN_1_2, 2, placesFree()),
-//    MoveCharacteristic(CAVE1_SHALLOW, HALL_BETWEEN_2_3, 4, placesFree(HALL_BETWEEN_1_2)),
-//    MoveCharacteristic(CAVE1_SHALLOW, HALL_BETWEEN_3_4, 6, placesFree(HALL_BETWEEN_1_2, HALL_BETWEEN_2_3)),
-//    MoveCharacteristic(CAVE1_SHALLOW, HALL_RIGHT_SHALLOW, 8, placesFree(HALL_BETWEEN_1_2, HALL_BETWEEN_2_3, HALL_BETWEEN_3_4)),
-//    MoveCharacteristic(CAVE1_SHALLOW, HALL_RIGHT_DEEP, 9, placesFree(HALL_BETWEEN_1_2, HALL_BETWEEN_2_3, HALL_BETWEEN_3_4, HALL_RIGHT_DEEP)),
-//
-//    MoveCharacteristic(CAVE2_DEEP, HALL_LEFT_DEEP, 6, placesFree(CAVE2_SHALLOW, HALL_BETWEEN_1_2, HALL_LEFT_SHALLOW)),
-//    MoveCharacteristic(CAVE2_DEEP, HALL_LEFT_SHALLOW, 5, placesFree(CAVE2_SHALLOW, HALL_BETWEEN_1_2)),
-//    MoveCharacteristic(CAVE2_DEEP, HALL_BETWEEN_1_2, 3, placesFree(CAVE2_SHALLOW)),
-//    MoveCharacteristic(CAVE2_DEEP, HALL_BETWEEN_2_3, 3, placesFree(CAVE2_SHALLOW)),
-//    MoveCharacteristic(CAVE2_DEEP, HALL_BETWEEN_3_4, 5, placesFree(CAVE2_SHALLOW, HALL_BETWEEN_2_3)),
-//    MoveCharacteristic(CAVE2_DEEP, HALL_RIGHT_SHALLOW, 7, placesFree(CAVE2_SHALLOW, HALL_BETWEEN_2_3, HALL_BETWEEN_3_4)),
-//    MoveCharacteristic(CAVE2_DEEP, HALL_RIGHT_DEEP, 8, placesFree(CAVE2_SHALLOW, HALL_BETWEEN_2_3, HALL_BETWEEN_3_4, HALL_RIGHT_DEEP)),
-//
-//    MoveCharacteristic(CAVE2_SHALLOW, HALL_LEFT_DEEP, 5, placesFree(HALL_BETWEEN_1_2, HALL_LEFT_SHALLOW)),
-//    MoveCharacteristic(CAVE2_SHALLOW, HALL_LEFT_SHALLOW, 4, placesFree(HALL_BETWEEN_1_2)),
-//    MoveCharacteristic(CAVE2_SHALLOW, HALL_BETWEEN_1_2, 2, placesFree()),
-//    MoveCharacteristic(CAVE2_SHALLOW, HALL_BETWEEN_2_3, 2, placesFree()),
-//    MoveCharacteristic(CAVE2_SHALLOW, HALL_BETWEEN_3_4, 4, placesFree(HALL_BETWEEN_2_3)),
-//    MoveCharacteristic(CAVE2_SHALLOW, HALL_RIGHT_SHALLOW, 6, placesFree(HALL_BETWEEN_2_3, HALL_BETWEEN_3_4)),
-//    MoveCharacteristic(CAVE2_SHALLOW, HALL_RIGHT_DEEP, 7, placesFree(HALL_BETWEEN_2_3, HALL_BETWEEN_3_4, HALL_RIGHT_DEEP)),
-//
-//    MoveCharacteristic(CAVE3_DEEP, HALL_LEFT_DEEP, 8, placesFree(CAVE3_SHALLOW, HALL_BETWEEN_2_3, HALL_BETWEEN_1_2, HALL_LEFT_SHALLOW)),
-//    MoveCharacteristic(CAVE3_DEEP, HALL_LEFT_SHALLOW, 7, placesFree(CAVE3_SHALLOW, HALL_BETWEEN_2_3, HALL_BETWEEN_1_2)),
-//    MoveCharacteristic(CAVE3_DEEP, HALL_BETWEEN_1_2, 5, placesFree(CAVE3_SHALLOW, HALL_BETWEEN_2_3)),
-//    MoveCharacteristic(CAVE3_DEEP, HALL_BETWEEN_2_3, 3, placesFree(CAVE3_SHALLOW)),
-//    MoveCharacteristic(CAVE3_DEEP, HALL_BETWEEN_3_4, 3, placesFree(CAVE3_SHALLOW)),
-//    MoveCharacteristic(CAVE3_DEEP, HALL_RIGHT_SHALLOW, 5, placesFree(CAVE3_SHALLOW, HALL_BETWEEN_3_4)),
-//    MoveCharacteristic(CAVE3_DEEP, HALL_RIGHT_DEEP, 6, placesFree(CAVE3_SHALLOW, HALL_BETWEEN_3_4, HALL_RIGHT_DEEP)),
-//
-//    MoveCharacteristic(CAVE3_SHALLOW, HALL_LEFT_DEEP, 7, placesFree(HALL_BETWEEN_2_3, HALL_BETWEEN_1_2, HALL_LEFT_SHALLOW)),
-//    MoveCharacteristic(CAVE3_SHALLOW, HALL_LEFT_SHALLOW, 6, placesFree(HALL_BETWEEN_2_3, HALL_BETWEEN_1_2)),
-//    MoveCharacteristic(CAVE3_SHALLOW, HALL_BETWEEN_1_2, 4, placesFree(HALL_BETWEEN_2_3)),
-//    MoveCharacteristic(CAVE3_SHALLOW, HALL_BETWEEN_2_3, 2, placesFree()),
-//    MoveCharacteristic(CAVE3_SHALLOW, HALL_BETWEEN_3_4, 2, placesFree()),
-//    MoveCharacteristic(CAVE3_SHALLOW, HALL_RIGHT_SHALLOW, 4, placesFree(HALL_BETWEEN_3_4)),
-//    MoveCharacteristic(CAVE3_SHALLOW, HALL_RIGHT_DEEP, 5, placesFree(HALL_BETWEEN_3_4, HALL_RIGHT_DEEP)),
-//
-//    MoveCharacteristic(CAVE4_DEEP, HALL_LEFT_DEEP, 10, placesFree(CAVE4_SHALLOW, HALL_BETWEEN_3_4, HALL_BETWEEN_2_3, HALL_BETWEEN_1_2, HALL_LEFT_SHALLOW)),
-//    MoveCharacteristic(CAVE4_DEEP, HALL_LEFT_SHALLOW, 9, placesFree(CAVE4_SHALLOW, HALL_BETWEEN_3_4, HALL_BETWEEN_2_3, HALL_BETWEEN_1_2)),
-//    MoveCharacteristic(CAVE4_DEEP, HALL_BETWEEN_1_2, 7, placesFree(CAVE4_SHALLOW, HALL_BETWEEN_3_4, HALL_BETWEEN_2_3)),
-//    MoveCharacteristic(CAVE4_DEEP, HALL_BETWEEN_2_3, 5, placesFree(CAVE4_SHALLOW, HALL_BETWEEN_3_4)),
-//    MoveCharacteristic(CAVE4_DEEP, HALL_BETWEEN_3_4, 3, placesFree(CAVE4_SHALLOW)),
-//    MoveCharacteristic(CAVE4_DEEP, HALL_RIGHT_SHALLOW, 3, placesFree(CAVE4_SHALLOW)),
-//    MoveCharacteristic(CAVE4_DEEP, HALL_RIGHT_DEEP, 4, placesFree(CAVE4_SHALLOW, HALL_RIGHT_DEEP)),
-//
-//    MoveCharacteristic(CAVE4_SHALLOW, HALL_LEFT_DEEP, 9, placesFree(HALL_BETWEEN_3_4, HALL_BETWEEN_2_3, HALL_BETWEEN_1_2, HALL_LEFT_SHALLOW)),
-//    MoveCharacteristic(CAVE4_SHALLOW, HALL_LEFT_SHALLOW, 8, placesFree(HALL_BETWEEN_3_4, HALL_BETWEEN_2_3, HALL_BETWEEN_1_2)),
-//    MoveCharacteristic(CAVE4_SHALLOW, HALL_BETWEEN_1_2, 6, placesFree(HALL_BETWEEN_3_4, HALL_BETWEEN_2_3)),
-//    MoveCharacteristic(CAVE4_SHALLOW, HALL_BETWEEN_2_3, 4, placesFree(HALL_BETWEEN_3_4)),
-//    MoveCharacteristic(CAVE4_SHALLOW, HALL_BETWEEN_3_4, 2, placesFree()),
-//    MoveCharacteristic(CAVE4_SHALLOW, HALL_RIGHT_SHALLOW, 2, placesFree()),
-//    MoveCharacteristic(CAVE4_SHALLOW, HALL_RIGHT_DEEP, 3, placesFree(HALL_RIGHT_DEEP)),
-//)
-//
-//private fun generateMovesCharsMap(): Map<Pair<AmphipodLoc, AmphipodLoc>, MoveCharacteristic> {
-//    return movesCharacteristics.flatMap { mch ->
-//        listOf(
-//            (mch.loc1 to mch.loc2) to mch,
-//            (mch.loc2 to mch.loc1) to mch,
-//        )
-//    }.toMap()
-//}
-//
-//private val movesCharsMap = generateMovesCharsMap()
+private val startState2 = Burrow(4).generateState { room ->
+    when(room) {
+        0 -> listOf(D, D, D, C)
+        1 -> listOf(D, C, B, C)
+        2 -> listOf(A, B, A, B)
+        3 -> listOf(A, A, C, B)
+        else -> throw error("error")
+    }
+}
+
+
+
+
 
